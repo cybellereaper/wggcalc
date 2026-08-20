@@ -214,7 +214,7 @@ module SheetParser
 
       rows.each do |row|
         next if row.empty?
-        raise ParseError.new("Invalid parts row length: expected 16, got #{row.size}") unless row.size == 16
+        raise ParseError.new("Invalid parts row length: expected 17, got #{row.size}") unless row.size == 17
 
         name = row[1].strip
         if divider = parse_divider(name)
