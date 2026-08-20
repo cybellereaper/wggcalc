@@ -138,20 +138,42 @@ module SheetParser
   module Normalizer
     extend self
 
-    def normalize_numeric_value(raw_value : String, expect_range : Bool = false) : JsonValue
-      value = raw_value.strip
-      return nil if value.empty? || value == "🎲"
+def normalize_numeric_value(raw_value : String, expect_range : Bool = false) : JsonValue
+  value = raw_value.strip
 
-      cleaned = value.gsub('°', "").gsub("s", "").gsub("rpm", "").gsub('%', "").gsub(',', "").gsub('>', '-').strip
+  return nil if value.empty? || value == "🎲"
 
-      if expect_range
-        pieces = cleaned.split(" - ")
-        raise ParseError.new("Expected numeric range but got: #{raw_value.inspect}") unless pieces.size == 2
-        return pieces.map { |piece| coerce_number(parse_single_or_multiplier(piece)) }.map { |v| v.as(JsonValue) }
-      end
+  cleaned = value
+    .gsub('°', "")
+    .gsub("s", "")
+    .gsub("rpm", "")
+    .gsub('%', "")
+    .gsub(',', "")
+    .strip
 
-      coerce_number(parse_single_or_multiplier(cleaned))
+  if expect_range
+    # Open-ended lower/upper range, e.g. "23 >"
+    if match = cleaned.match(/\A(.+?)\s*>\s*\z/)
+      return [
+        coerce_number(parse_single_or_multiplier(match[1].strip)),
+        nil,
+      ] of JsonValue
     end
+
+    pieces = cleaned.gsub('>', '-').split(" - ")
+
+    raise ParseError.new(
+      "Expected numeric range but got: #{raw_value.inspect}"
+    ) unless pieces.size == 2
+
+    return pieces
+      .map { |piece| coerce_number(parse_single_or_multiplier(piece.strip)) }
+      .map { |v| v.as(JsonValue) }
+  end
+
+  cleaned = cleaned.gsub('>', '-').strip
+  coerce_number(parse_single_or_multiplier(cleaned))
+end
 
     def detect_price_type(price : String) : String
       normalized = price.strip
