@@ -1,6 +1,6 @@
 # WeirdGunGameCalc (Rust)
 
-Rust rewrite of the Weird Gun Game bruteforce calculator.
+High-performance brute-force calculator for the Roblox game **Weird Gun Game**, with both a Rust CLI and a real-time browser interface.
 
 ## Build
 
@@ -37,20 +37,40 @@ Executable output:
 - `--dps-min`, `--dps-max`
 - `--metrics`
 
+## Real-time web calculator
+
+The static site in `docs/` recalculates builds automatically as settings change. Computation runs in a Web Worker, keeping the page responsive even while evaluating large candidate sets.
+
+Generate its browser-readable dataset from the canonical SQLite database:
+
+```bash
+cargo run --bin export_web_data
+```
+
+Preview locally:
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080/docs/`.
+
+The scheduled data workflow refreshes `Data/FullData.sqlite3` and regenerates `docs/data.json`, so the CLI and website consume the same source data.
+
 ## Test
 
 ```bash
 cargo test
+node --test docs/tests/engine.test.mjs
 ```
+
+CI additionally enforces `rustfmt`, Clippy with warnings denied, browser-module syntax checks, a web-data export smoke test, release builds, and a real-dataset CLI smoke test.
 
 ## Regenerating sheet data
 
 ```bash
 cargo run --release --bin parse_sheet
+cargo run --release --bin export_web_data
 ```
 
-The Rust data utility downloads the same Google Sheet CSV exports and recreates `Data/FullData.sqlite3` with the schema used by the calculator.
-
-## Web app
-
-The browser app under `docs/` is independent JavaScript and remains unchanged. The calculator, data parser/generator, tests, build commands, and scheduled data-refresh workflow no longer require Crystal or Shards.
+The Rust data utility downloads the Google Sheet CSV exports and recreates `Data/FullData.sqlite3`. The web exporter then produces the compact `docs/data.json` used by GitHub Pages.
