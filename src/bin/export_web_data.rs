@@ -6,7 +6,10 @@ use serde_json::{json, Value};
 use weirdgungamecalc::parser::load_data;
 
 #[derive(Debug, Parser)]
-#[command(name = "export_web_data", about = "Export calculator data for the static web app")]
+#[command(
+    name = "export_web_data",
+    about = "Export calculator data for the static web app"
+)]
 struct Cli {
     #[arg(long, default_value = "Data/FullData.sqlite3")]
     data: String,
