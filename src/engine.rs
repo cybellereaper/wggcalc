@@ -334,7 +334,7 @@ impl<'a> Engine<'a> {
     }
 
     fn top_magazines<'b>(
-        &self,
+        &'b self,
         core: &Core,
         core_idx: usize,
         max_count: usize,
