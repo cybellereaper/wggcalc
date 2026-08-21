@@ -7,8 +7,10 @@ self.addEventListener('message', async (event) => {
 
   if (message.type === 'init') {
     try {
-      const response = await fetch(message.dataUrl, { cache: 'no-cache' });
-      if (!response.ok) throw new Error(`Dataset request failed (${response.status})`);
+      const siteRoot = new URL('../', self.location.href);
+      const datasetUrl = new URL(message.dataUrl, siteRoot);
+      const response = await fetch(datasetUrl, { cache: 'no-cache' });
+      if (!response.ok) throw new Error(`Dataset request failed (${response.status}) for ${datasetUrl.pathname}`);
       data = normalizeData(await response.json());
 
       self.postMessage({
