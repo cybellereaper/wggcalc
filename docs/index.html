@@ -3,55 +3,154 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weird Gun Game Calc (WebAssembly-ready web app)</title>
+    <meta name="description" content="Real-time Weird Gun Game build calculator." />
+    <meta name="theme-color" content="#0b0d12" />
+    <title>WGG Calc — Real-time Weird Gun Game Calculator</title>
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <h1>Weird Gun Game Calc</h1>
-      <p class="subtitle">Static web build for GitHub Pages. Uses browser-side compute and can be upgraded to WASM module later.</p>
-
-      <section class="panel">
-        <h2>Controls</h2>
-        <div class="grid">
-          <label>Data URL
-            <input id="dataUrl" value="../Data/FullData.json" />
-          </label>
-          <label>Top N
-            <input id="topN" type="number" min="1" value="10" />
-          </label>
-          <label>Sort
-            <select id="sortKey">
-              <option value="ttk">TTK</option>
-              <option value="dps">DPS</option>
-              <option value="damage">Damage</option>
-              <option value="damageend">Damage End</option>
-              <option value="firerate">Fire Rate</option>
-              <option value="magazine">Magazine</option>
-            </select>
-          </label>
-          <label>Priority
-            <select id="priority">
-              <option value="auto">Auto</option>
-              <option value="highest">Highest</option>
-              <option value="lowest">Lowest</option>
-            </select>
-          </label>
-          <label>Player Health
-            <input id="maxHealth" type="number" min="1" step="1" value="100" />
-          </label>
-          <label>Include categories (comma list)
-            <input id="include" placeholder="AR,SMG" />
-          </label>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="WGG Calc home">
+          <span class="brand-mark" aria-hidden="true">W</span>
+          <span><strong>WGG Calc</strong><small>Weird Gun Game</small></span>
+        </a>
+        <div class="live-status" aria-live="polite">
+          <span id="statusDot" class="status-dot" data-state="loading"></span>
+          <span id="statusText">Loading calculator data…</span>
         </div>
-        <button id="runBtn">Run</button>
-      </section>
+      </header>
 
-      <section class="panel">
-        <h2>Results</h2>
-        <pre id="output">Click Run to calculate.</pre>
-      </section>
-    </main>
+      <main class="layout">
+        <aside class="controls-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Build search</p>
+              <h1>Find the best gun.</h1>
+            </div>
+            <button id="resetButton" class="text-button" type="button">Reset</button>
+          </div>
+          <p class="panel-description">Every change recalculates automatically in a background worker, so the interface stays responsive.</p>
+
+          <form id="calculatorForm" novalidate>
+            <section class="control-section">
+              <h2>Target</h2>
+              <div class="two-column">
+                <label class="field">
+                  <span>Player health</span>
+                  <input id="maxHealth" type="number" min="1" step="1" value="100" inputmode="decimal" />
+                </label>
+                <label class="field">
+                  <span>Top results</span>
+                  <input id="topN" type="number" min="1" max="100" step="1" value="10" inputmode="numeric" />
+                </label>
+              </div>
+            </section>
+
+            <section class="control-section">
+              <h2>Ranking</h2>
+              <div class="two-column">
+                <label class="field">
+                  <span>Sort metric</span>
+                  <select id="sortKey">
+                    <option value="ttk">Time to kill</option>
+                    <option value="dps">DPS</option>
+                    <option value="damage">Damage</option>
+                    <option value="damageend">Damage end</option>
+                    <option value="firerate">Fire rate</option>
+                    <option value="magazine">Magazine size</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Direction</span>
+                  <select id="priority">
+                    <option value="auto">Automatic</option>
+                    <option value="highest">Highest</option>
+                    <option value="lowest">Lowest</option>
+                  </select>
+                </label>
+              </div>
+              <label class="field">
+                <span>Candidate parts per slot</span>
+                <input id="partPool" type="number" min="1" max="50" step="1" value="20" inputmode="numeric" />
+                <small>Higher values search more combinations and can take longer.</small>
+              </label>
+            </section>
+
+            <section class="control-section">
+              <div class="section-title-row">
+                <h2>Categories</h2>
+                <span class="muted">None = all</span>
+              </div>
+              <div id="categoryList" class="category-list" aria-label="Weapon categories"></div>
+            </section>
+
+            <details class="advanced-panel">
+              <summary>Advanced filters</summary>
+              <div class="advanced-content">
+                <div class="range-group">
+                  <span class="range-label">Damage</span>
+                  <div class="two-column"><label class="field"><span>Min</span><input id="damageMin" type="number" step="any" /></label><label class="field"><span>Max</span><input id="damageMax" type="number" step="any" /></label></div>
+                </div>
+                <div class="range-group">
+                  <span class="range-label">Damage end</span>
+                  <div class="two-column"><label class="field"><span>Min</span><input id="damageEndMin" type="number" step="any" /></label><label class="field"><span>Max</span><input id="damageEndMax" type="number" step="any" /></label></div>
+                </div>
+                <div class="range-group">
+                  <span class="range-label">TTK (seconds)</span>
+                  <div class="two-column"><label class="field"><span>Min</span><input id="ttkMin" type="number" min="0" step="any" /></label><label class="field"><span>Max</span><input id="ttkMax" type="number" min="0" step="any" /></label></div>
+                </div>
+                <div class="range-group">
+                  <span class="range-label">DPS</span>
+                  <div class="two-column"><label class="field"><span>Min</span><input id="dpsMin" type="number" min="0" step="any" /></label><label class="field"><span>Max</span><input id="dpsMax" type="number" min="0" step="any" /></label></div>
+                </div>
+              </div>
+            </details>
+          </form>
+        </aside>
+
+        <section class="results-panel">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow">Live results</p>
+              <h2>Optimized builds</h2>
+              <p id="dataSummary" class="muted">Loading dataset…</p>
+            </div>
+            <div class="metrics-strip" aria-label="Calculation metrics">
+              <div><strong id="resultCount">—</strong><span>Results</span></div>
+              <div><strong id="elapsedTime">—</strong><span>Compute</span></div>
+              <div><strong id="combinations">—</strong><span>Evaluated</span></div>
+            </div>
+          </div>
+
+          <article id="heroResult" class="hero-result" hidden>
+            <div>
+              <span class="hero-kicker">#1 build</span>
+              <h3 id="heroTitle"></h3>
+              <p id="heroBuild"></p>
+            </div>
+            <div id="heroStats" class="hero-stats"></div>
+          </article>
+
+          <div id="emptyState" class="empty-state">
+            <div class="empty-icon" aria-hidden="true">⌁</div>
+            <strong>Preparing calculator</strong>
+            <span>The dataset is loading in the background.</span>
+          </div>
+
+          <div id="tableWrap" class="table-wrap" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th><th>Build</th><th>Damage</th><th>End</th><th>RPM</th><th>Mag</th><th>TTK</th><th>DPS</th><th><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
 
     <script type="module" src="./src/app.js"></script>
   </body>
