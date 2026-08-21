@@ -176,7 +176,10 @@ impl SheetDownloader {
 }
 
 fn create_parent_dir(path: &Path) -> Result<()> {
-    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+    if let Some(parent) = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+    {
         fs::create_dir_all(parent)?;
     }
     Ok(())
@@ -410,10 +413,7 @@ impl CoresParser {
             .map_err(Into::into)
     }
 
-    pub fn parse_rows(
-        &self,
-        rows: &[Vec<String>],
-    ) -> std::result::Result<ItemRows, ParseError> {
+    pub fn parse_rows(&self, rows: &[Vec<String>]) -> std::result::Result<ItemRows, ParseError> {
         const WIDTH: usize = 18;
         let mut output = Vec::new();
         let mut current_category = "AR".to_string();
@@ -484,10 +484,7 @@ pub fn read_csv_rows(
     let mut rows = Vec::new();
 
     for record in reader.records().skip(skip_header_rows) {
-        let mut row = record?
-            .iter()
-            .map(str::to_string)
-            .collect::<Vec<String>>();
+        let mut row = record?.iter().map(str::to_string).collect::<Vec<String>>();
         if trim_first_column && !row.is_empty() {
             row.remove(0);
         }
@@ -524,10 +521,7 @@ pub fn build_full_data(parts_file: &Path, cores_file: &Path) -> Result<ExportDat
     Ok(ExportData {
         data,
         penalties: CURRENT_PENALTIES.iter().map(|row| row.to_vec()).collect(),
-        categories: HashMap::from([
-            ("Primary".into(), primary),
-            ("Secondary".into(), secondary),
-        ]),
+        categories: HashMap::from([("Primary".into(), primary), ("Secondary".into(), secondary)]),
     })
 }
 
@@ -565,10 +559,7 @@ fn temporary_database_path(output_path: &Path) -> Result<PathBuf> {
         .file_name()
         .context("SQLite output path must include a file name")?
         .to_string_lossy();
-    Ok(output_path.with_file_name(format!(
-        ".{file_name}.{}.tmp",
-        process::id()
-    )))
+    Ok(output_path.with_file_name(format!(".{file_name}.{}.tmp", process::id())))
 }
 
 fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
@@ -588,9 +579,8 @@ fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
     }
 
     {
-        let mut statement = transaction.prepare(
-            "INSERT INTO penalties (core_idx, part_idx, value) VALUES (?1, ?2, ?3)",
-        )?;
+        let mut statement = transaction
+            .prepare("INSERT INTO penalties (core_idx, part_idx, value) VALUES (?1, ?2, ?3)")?;
         for (core_idx, row) in export.penalties.iter().enumerate() {
             for (part_idx, value) in row.iter().enumerate() {
                 statement.execute(params![core_idx as i64, part_idx as i64, value])?;
@@ -617,10 +607,7 @@ fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
     }
 
     {
-        let magazines = export
-            .data
-            .get("Magazines")
-            .context("missing Magazines")?;
+        let magazines = export.data.get("Magazines").context("missing Magazines")?;
         let mut statement = transaction.prepare(
             "INSERT INTO magazines \
              (name, category, magazine_size, reload_time, damage_mod, fire_rate_mod) \

@@ -20,8 +20,7 @@ fn sqlite_path(path: &str) -> bool {
 }
 
 fn load_sqlite_data(path: &str) -> Result<DataSet> {
-    let conn =
-        Connection::open(path).with_context(|| format!("opening SQLite database {path}"))?;
+    let conn = Connection::open(path).with_context(|| format!("opening SQLite database {path}"))?;
 
     let categories = load_categories_sqlite(&conn)?;
     let category_count = categories
@@ -43,9 +42,8 @@ fn load_sqlite_data(path: &str) -> Result<DataSet> {
 }
 
 fn load_cores_sqlite(conn: &Connection) -> Result<Vec<Core>> {
-    let mut stmt = conn.prepare(
-        "SELECT name, category, damage, damage_end, fire_rate FROM cores ORDER BY id",
-    )?;
+    let mut stmt = conn
+        .prepare("SELECT name, category, damage, damage_end, fire_rate FROM cores ORDER BY id")?;
     let rows = stmt.query_map([], |row| {
         Ok(Core {
             name: row.get(0)?,
@@ -142,10 +140,10 @@ fn load_penalties_sqlite(conn: &Connection, category_count: usize) -> Result<Vec
 }
 
 fn load_json_data(path: &str) -> Result<DataSet> {
-    let raw =
-        fs::read_to_string(path).with_context(|| format!("reading legacy JSON data from {path}"))?;
-    let root: Value =
-        serde_json::from_str(&raw).with_context(|| format!("parsing legacy JSON data from {path}"))?;
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("reading legacy JSON data from {path}"))?;
+    let root: Value = serde_json::from_str(&raw)
+        .with_context(|| format!("parsing legacy JSON data from {path}"))?;
     let data = root
         .get("Data")
         .and_then(Value::as_object)
@@ -249,7 +247,9 @@ fn parse_parts(nodes: &[Value]) -> Result<Vec<Part>> {
 }
 
 fn required_string<'a>(value: Option<&'a Value>, field: &str) -> Result<&'a str> {
-    value.and_then(Value::as_str).with_context(|| field.to_string())
+    value
+        .and_then(Value::as_str)
+        .with_context(|| field.to_string())
 }
 
 fn parse_damage_pair(value: Option<&Value>) -> Result<(f64, f64)> {

@@ -1,10 +1,16 @@
 use std::time::Instant;
 
 use clap::Parser;
-use weirdgungamecalc::{engine::write_results, parser::load_data, Config, Engine, NumericRange, SortKey, SortPriority};
+use weirdgungamecalc::{
+    engine::write_results, parser::load_data, Config, Engine, NumericRange, SortKey, SortPriority,
+};
 
 #[derive(Debug, Parser)]
-#[command(name = "wggcalc", about = "Find the best Weird Gun Game build", version)]
+#[command(
+    name = "wggcalc",
+    about = "Find the best Weird Gun Game build",
+    version
+)]
 struct Cli {
     #[arg(long, default_value = "Data/FullData.sqlite3")]
     data: String,
@@ -20,15 +26,24 @@ struct Cli {
     include: Vec<String>,
     #[arg(long = "part-pool", default_value_t = 20)]
     part_pool: usize,
-    #[arg(long = "damage-min")] damage_min: Option<f64>,
-    #[arg(long = "damage-max")] damage_max: Option<f64>,
-    #[arg(long = "damage-end-min")] damage_end_min: Option<f64>,
-    #[arg(long = "damage-end-max")] damage_end_max: Option<f64>,
-    #[arg(long = "ttk-min")] ttk_min: Option<f64>,
-    #[arg(long = "ttk-max")] ttk_max: Option<f64>,
-    #[arg(long = "dps-min")] dps_min: Option<f64>,
-    #[arg(long = "dps-max")] dps_max: Option<f64>,
-    #[arg(long)] metrics: bool,
+    #[arg(long = "damage-min")]
+    damage_min: Option<f64>,
+    #[arg(long = "damage-max")]
+    damage_max: Option<f64>,
+    #[arg(long = "damage-end-min")]
+    damage_end_min: Option<f64>,
+    #[arg(long = "damage-end-max")]
+    damage_end_max: Option<f64>,
+    #[arg(long = "ttk-min")]
+    ttk_min: Option<f64>,
+    #[arg(long = "ttk-max")]
+    ttk_max: Option<f64>,
+    #[arg(long = "dps-min")]
+    dps_min: Option<f64>,
+    #[arg(long = "dps-max")]
+    dps_max: Option<f64>,
+    #[arg(long)]
+    metrics: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -56,16 +71,32 @@ fn main() -> anyhow::Result<()> {
     let calc_elapsed = calc_start.elapsed();
     let total_elapsed = total_start.elapsed();
 
-    println!("Loaded {} cores, {} magazines, {} barrels, {} stocks, {} grips\n", data.cores.len(), data.magazines.len(), data.barrels.len(), data.stocks.len(), data.grips.len());
+    println!(
+        "Loaded {} cores, {} magazines, {} barrels, {} stocks, {} grips\n",
+        data.cores.len(),
+        data.magazines.len(),
+        data.barrels.len(),
+        data.stocks.len(),
+        data.grips.len()
+    );
     print!("{}", write_results(&results));
 
     if cli.metrics {
         println!("Performance metrics:");
         println!("  Data load: {:.3} ms", load_elapsed.as_secs_f64() * 1000.0);
-        println!("  Calculation: {:.3} ms", calc_elapsed.as_secs_f64() * 1000.0);
-        println!("  Total runtime: {:.3} ms", total_elapsed.as_secs_f64() * 1000.0);
+        println!(
+            "  Calculation: {:.3} ms",
+            calc_elapsed.as_secs_f64() * 1000.0
+        );
+        println!(
+            "  Total runtime: {:.3} ms",
+            total_elapsed.as_secs_f64() * 1000.0
+        );
         println!("  Cores considered: {}", stats.cores_considered);
-        println!("  Cores skipped by category: {}", stats.cores_skipped_by_category);
+        println!(
+            "  Cores skipped by category: {}",
+            stats.cores_skipped_by_category
+        );
         println!("  Combinations evaluated: {}", stats.combinations_evaluated);
         println!("  Combinations filtered: {}", stats.combinations_filtered);
         println!("  Results kept: {}", stats.results_kept);

@@ -63,8 +63,8 @@ fn sqlite_round_trip_preserves_calculator_fields() {
     let database = directory.path().join("full_data.sqlite3");
     save_sqlite(&export_fixture(), &database).expect("save SQLite fixture");
 
-    let loaded = load_data(database.to_str().expect("UTF-8 temporary path"))
-        .expect("load SQLite fixture");
+    let loaded =
+        load_data(database.to_str().expect("UTF-8 temporary path")).expect("load SQLite fixture");
     assert_eq!(loaded.cores.len(), 1);
     assert_eq!(loaded.magazines.len(), 1);
     assert_eq!(loaded.barrels.len(), 1);
@@ -100,8 +100,8 @@ fn open_ended_damage_range_keeps_original_sqlite_semantics() {
     );
 
     save_sqlite(&export, &database).expect("save SQLite fixture");
-    let loaded = load_data(database.to_str().expect("UTF-8 temporary path"))
-        .expect("load SQLite fixture");
+    let loaded =
+        load_data(database.to_str().expect("UTF-8 temporary path")).expect("load SQLite fixture");
 
     assert_eq!(loaded.cores[0].damage, 30.0);
     assert_eq!(loaded.cores[0].damage_end, 0.0);
@@ -152,7 +152,10 @@ fn negative_sqlite_indices_are_rejected_instead_of_wrapping() {
     let error = load_data(database.to_str().expect("UTF-8 temporary path"))
         .expect_err("negative index must be rejected")
         .to_string();
-    assert!(error.contains("negative index"), "unexpected error: {error}");
+    assert!(
+        error.contains("negative index"),
+        "unexpected error: {error}"
+    );
 }
 
 #[test]
@@ -228,8 +231,8 @@ fn legacy_json_supports_scalar_damage_and_missing_optional_numbers() {
     )
     .expect("write JSON fixture");
 
-    let loaded = load_data(path.to_str().expect("UTF-8 temporary path"))
-        .expect("load legacy JSON fixture");
+    let loaded =
+        load_data(path.to_str().expect("UTF-8 temporary path")).expect("load legacy JSON fixture");
     assert_eq!(loaded.cores[0].damage, 25.0);
     assert_eq!(loaded.cores[0].damage_end, 25.0);
     assert_eq!(loaded.magazines[0].damage_mod, 0.0);

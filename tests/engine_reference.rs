@@ -78,11 +78,7 @@ fn regression_data() -> DataSet {
             vec![0.8, 1.0, 1.0],
             vec![1.0, 1.0, 1.0],
         ],
-        categories: HashMap::from([
-            ("AR".into(), 0),
-            ("SMG".into(), 1),
-            ("Weird".into(), 2),
-        ]),
+        categories: HashMap::from([("AR".into(), 0), ("SMG".into(), 1), ("Weird".into(), 2)]),
     }
 }
 
@@ -125,8 +121,10 @@ fn optimized_engine_matches_naive_reference_across_rankings() {
 #[test]
 fn optimized_engine_matches_reference_with_category_filter_and_ties() {
     let mut data = regression_data();
-    data.magazines.insert(0, magazine("Tie A", "AR", 30.0, 5.0, 0.0));
-    data.magazines.insert(1, magazine("Tie B", "AR", 30.0, 5.0, 0.0));
+    data.magazines
+        .insert(0, magazine("Tie A", "AR", 30.0, 5.0, 0.0));
+    data.magazines
+        .insert(1, magazine("Tie B", "AR", 30.0, 5.0, 0.0));
 
     let config = Config {
         top_n: 5,
@@ -166,12 +164,27 @@ fn naive_calculate_top(data: &DataSet, config: &Config) -> (Vec<ResultRow>, Calc
         };
 
         let magazines = top_magazines_reference(data, core, core_index, config.part_pool_per_type);
-        let barrels =
-            top_parts_reference(data, &data.barrels, core, core_index, config.part_pool_per_type);
-        let stocks =
-            top_parts_reference(data, &data.stocks, core, core_index, config.part_pool_per_type);
-        let grips =
-            top_parts_reference(data, &data.grips, core, core_index, config.part_pool_per_type);
+        let barrels = top_parts_reference(
+            data,
+            &data.barrels,
+            core,
+            core_index,
+            config.part_pool_per_type,
+        );
+        let stocks = top_parts_reference(
+            data,
+            &data.stocks,
+            core,
+            core_index,
+            config.part_pool_per_type,
+        );
+        let grips = top_parts_reference(
+            data,
+            &data.grips,
+            core,
+            core_index,
+            config.part_pool_per_type,
+        );
 
         for magazine in magazines {
             for barrel in &barrels {
@@ -185,9 +198,21 @@ fn naive_calculate_top(data: &DataSet, config: &Config) -> (Vec<ResultRow>, Calc
                             core,
                             core_index,
                             [
-                                (magazine.name.as_str(), magazine.category.as_str(), magazine.damage_mod),
-                                (barrel.name.as_str(), barrel.category.as_str(), barrel.damage_mod),
-                                (stock.name.as_str(), stock.category.as_str(), stock.damage_mod),
+                                (
+                                    magazine.name.as_str(),
+                                    magazine.category.as_str(),
+                                    magazine.damage_mod,
+                                ),
+                                (
+                                    barrel.name.as_str(),
+                                    barrel.category.as_str(),
+                                    barrel.damage_mod,
+                                ),
+                                (
+                                    stock.name.as_str(),
+                                    stock.category.as_str(),
+                                    stock.damage_mod,
+                                ),
                                 (grip.name.as_str(), grip.category.as_str(), grip.damage_mod),
                             ],
                         );
@@ -196,10 +221,26 @@ fn naive_calculate_top(data: &DataSet, config: &Config) -> (Vec<ResultRow>, Calc
                             core,
                             core_index,
                             [
-                                (magazine.name.as_str(), magazine.category.as_str(), magazine.fire_rate_mod),
-                                (barrel.name.as_str(), barrel.category.as_str(), barrel.fire_rate_mod),
-                                (stock.name.as_str(), stock.category.as_str(), stock.fire_rate_mod),
-                                (grip.name.as_str(), grip.category.as_str(), grip.fire_rate_mod),
+                                (
+                                    magazine.name.as_str(),
+                                    magazine.category.as_str(),
+                                    magazine.fire_rate_mod,
+                                ),
+                                (
+                                    barrel.name.as_str(),
+                                    barrel.category.as_str(),
+                                    barrel.fire_rate_mod,
+                                ),
+                                (
+                                    stock.name.as_str(),
+                                    stock.category.as_str(),
+                                    stock.fire_rate_mod,
+                                ),
+                                (
+                                    grip.name.as_str(),
+                                    grip.category.as_str(),
+                                    grip.fire_rate_mod,
+                                ),
                             ],
                         );
 
@@ -257,7 +298,10 @@ fn naive_calculate_top(data: &DataSet, config: &Config) -> (Vec<ResultRow>, Calc
     });
     rows.truncate(config.top_n);
 
-    let results = rows.into_iter().map(|(_, result)| result).collect::<Vec<_>>();
+    let results = rows
+        .into_iter()
+        .map(|(_, result)| result)
+        .collect::<Vec<_>>();
     stats.results_kept = results.len();
     (results, stats)
 }
@@ -317,10 +361,12 @@ fn modifier_multiplier_reference<const N: usize>(
     core_index: usize,
     parts: [(&str, &str, f64); N],
 ) -> f64 {
-    parts.into_iter().fold(1.0, |multiplier, (name, category, raw)| {
-        let penalty = penalty_reference(data, core_index, category);
-        multiplier * (1.0 + adjusted_reference(raw, &core.name, name, penalty) / 100.0)
-    })
+    parts
+        .into_iter()
+        .fold(1.0, |multiplier, (name, category, raw)| {
+            let penalty = penalty_reference(data, core_index, category);
+            multiplier * (1.0 + adjusted_reference(raw, &core.name, name, penalty) / 100.0)
+        })
 }
 
 fn penalty_reference(data: &DataSet, core_index: usize, category: &str) -> f64 {

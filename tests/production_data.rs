@@ -23,7 +23,10 @@ fn checked_in_database_loads_and_produces_viable_builds() {
         !data.magazines.is_empty(),
         "production database has no magazines"
     );
-    assert!(!data.barrels.is_empty(), "production database has no barrels");
+    assert!(
+        !data.barrels.is_empty(),
+        "production database has no barrels"
+    );
     assert!(!data.stocks.is_empty(), "production database has no stocks");
     assert!(!data.grips.is_empty(), "production database has no grips");
     assert!(!data.categories.is_empty(), "category map is empty");
@@ -36,7 +39,10 @@ fn checked_in_database_loads_and_produces_viable_builds() {
     };
     let (results, stats) = Engine::new(&data).calculate_top(&config);
 
-    assert!(!results.is_empty(), "production data produced no viable builds");
+    assert!(
+        !results.is_empty(),
+        "production data produced no viable builds"
+    );
     assert!(results.len() <= 3);
     assert_eq!(stats.results_kept, results.len());
     assert!(stats.cores_considered > 0);

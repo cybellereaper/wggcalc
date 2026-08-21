@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use weirdgungamecalc::{
-    Config, Core, DataSet, Engine, Magazine, NumericRange, Part, SortKey,
-};
+use weirdgungamecalc::{Config, Core, DataSet, Engine, Magazine, NumericRange, Part, SortKey};
 
 fn neutral_magazine(name: &str, category: &str) -> Magazine {
     Magazine {

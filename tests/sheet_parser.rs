@@ -27,20 +27,22 @@ fn normalizes_numeric_units_multipliers_and_ranges() {
         Some(6.0)
     );
     assert_eq!(
-        normalize_numeric_value("  12.5% ", false)
-            .unwrap()
-            .as_f64(),
+        normalize_numeric_value("  12.5% ", false).unwrap().as_f64(),
         Some(12.5)
     );
     assert_eq!(
-        normalize_numeric_value("100 rpm", false)
-            .unwrap()
-            .as_f64(),
+        normalize_numeric_value("100 rpm", false).unwrap().as_f64(),
         Some(100.0)
     );
     assert!(normalize_numeric_value("🎲", false).unwrap().is_null());
-    assert_eq!(normalize_numeric_value("5 - 10", true).unwrap(), json!([5.0, 10.0]));
-    assert_eq!(normalize_numeric_value("23 >", true).unwrap(), json!([23.0, null]));
+    assert_eq!(
+        normalize_numeric_value("5 - 10", true).unwrap(),
+        json!([5.0, 10.0])
+    );
+    assert_eq!(
+        normalize_numeric_value("23 >", true).unwrap(),
+        json!([23.0, null])
+    );
 }
 
 #[test]
@@ -211,11 +213,9 @@ fn sheet_downloader_follows_http_redirects() {
         .expect("download redirect fixture");
     server.join().expect("join test server");
 
-    assert!(
-        fs::read_to_string(output)
-            .expect("read downloaded fixture")
-            .contains("name,stat")
-    );
+    assert!(fs::read_to_string(output)
+        .expect("read downloaded fixture")
+        .contains("name,stat"));
 }
 
 #[test]

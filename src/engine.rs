@@ -15,8 +15,7 @@ impl NumericRange {
 
     #[inline]
     pub fn contains(self, value: f64) -> bool {
-        !self.min.is_some_and(|min| value < min)
-            && !self.max.is_some_and(|max| value > max)
+        !self.min.is_some_and(|min| value < min) && !self.max.is_some_and(|max| value > max)
     }
 }
 
@@ -197,12 +196,7 @@ impl<'a> Engine<'a> {
         (results, stats)
     }
 
-    fn calculate_core(
-        &self,
-        core: &Core,
-        config: &Config,
-        ranking: Ranking,
-    ) -> CoreOutcome {
+    fn calculate_core(&self, core: &Core, config: &Config, ranking: Ranking) -> CoreOutcome {
         let mut stats = CalculationStats {
             cores_considered: 1,
             ..CalculationStats::default()
@@ -230,14 +224,8 @@ impl<'a> Engine<'a> {
             core_idx,
             config.part_pool_per_type,
         );
-        let stocks = self.top_parts(
-            &self.data.stocks,
-            core,
-            core_idx,
-            config.part_pool_per_type,
-        );
-        let grips =
-            self.top_parts(&self.data.grips, core, core_idx, config.part_pool_per_type);
+        let stocks = self.top_parts(&self.data.stocks, core, core_idx, config.part_pool_per_type);
+        let grips = self.top_parts(&self.data.grips, core, core_idx, config.part_pool_per_type);
 
         let mut results = Vec::with_capacity(config.top_n.min(256));
 
@@ -248,8 +236,7 @@ impl<'a> Engine<'a> {
 
                 for stock in &stocks {
                     let base_damage_factor = mag_barrel_damage * stock.damage_factor;
-                    let base_fire_rate_factor =
-                        mag_barrel_fire_rate * stock.fire_rate_factor;
+                    let base_fire_rate_factor = mag_barrel_fire_rate * stock.fire_rate_factor;
 
                     for grip in &grips {
                         stats.combinations_evaluated += 1;
@@ -263,8 +250,7 @@ impl<'a> Engine<'a> {
                             damage_factor,
                             fire_rate_factor,
                             mag.magazine.magazine_size,
-                        )
-                        else {
+                        ) else {
                             continue;
                         };
 
@@ -580,7 +566,10 @@ fn insert_top_result(
         let worst = results
             .last()
             .expect("a full top-N list must contain at least one result");
-        if !ranking.better(ranking.result_metric(&candidate), ranking.result_metric(worst)) {
+        if !ranking.better(
+            ranking.result_metric(&candidate),
+            ranking.result_metric(worst),
+        ) {
             return;
         }
     }
