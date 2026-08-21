@@ -152,9 +152,12 @@ fn invalid_sort_and_priority_values_fail_cleanly() {
 }
 
 #[test]
-fn missing_data_file_fails_without_partial_results() {
+fn inaccessible_data_file_fails_without_partial_results() {
     let directory = tempdir().expect("create temporary directory");
-    let missing = directory.path().join("missing.sqlite3");
+    let missing = directory
+        .path()
+        .join("does-not-exist")
+        .join("missing.sqlite3");
     let output = Command::new(binary())
         .args(["--data", missing.to_str().expect("UTF-8 temporary path")])
         .output()
