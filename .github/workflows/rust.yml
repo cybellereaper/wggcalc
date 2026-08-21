@@ -23,14 +23,33 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Verify formatting
         run: cargo fmt --all -- --check
 
       - name: Clippy
         run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
-      - name: Test
+      - name: Test Rust
         run: cargo test --locked --all-targets --all-features
+
+      - name: Test browser engine
+        run: node --test docs/tests/engine.test.mjs
+
+      - name: Check browser modules
+        run: |
+          node --check docs/src/engine.js
+          node --check docs/src/worker.js
+          node --check docs/src/app.js
+
+      - name: Verify web dataset export
+        run: |
+          cargo run --locked --bin export_web_data -- --output /tmp/wggcalc-web-data.json
+          test -s /tmp/wggcalc-web-data.json
 
       - name: Build release binaries
         run: cargo build --locked --release --bins
