@@ -1,4 +1,5 @@
-const DATA_URL = './data.json';
+const ASSET_VERSION = '20260821-2';
+const DATA_URL = new URL('./data.json', window.location.href).href;
 const STORAGE_KEY = 'wggcalc:web-config:v1';
 const numberFormatter = new Intl.NumberFormat('en-US');
 
@@ -68,7 +69,7 @@ elements.resultsBody.addEventListener('click', async (event) => {
 function startWorker() {
   ready = false;
   setStatus('Loading calculator data…', 'loading');
-  worker = new Worker('./src/worker.js', { type: 'module' });
+  worker = new Worker(`./src/worker.js?v=${ASSET_VERSION}`, { type: 'module' });
   worker.addEventListener('message', handleWorkerMessage);
   worker.addEventListener('error', () => setStatus('Calculator worker failed to start', 'error'));
   worker.postMessage({ type: 'init', dataUrl: DATA_URL });
