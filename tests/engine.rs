@@ -65,8 +65,10 @@ fn tracks_evaluated_combinations() {
 #[test]
 fn tracks_filtered_combinations() {
     let data = fixture_data();
-    let mut config = Config::default();
-    config.damage_range = NumericRange::new(Some(9999.0), None);
+    let config = Config {
+        damage_range: NumericRange::new(Some(9999.0), None),
+        ..Config::default()
+    };
 
     let (results, stats) = Engine::new(&data).calculate_top(&config);
 
@@ -137,9 +139,11 @@ fn auto_priority_uses_highest_for_dps() {
         },
     ];
 
-    let mut config = Config::default();
-    config.top_n = 1;
-    config.sort_key = SortKey::Dps;
+    let config = Config {
+        top_n: 1,
+        sort_key: SortKey::Dps,
+        ..Config::default()
+    };
 
     let (results, _) = Engine::new(&data).calculate_top(&config);
 
@@ -166,8 +170,10 @@ fn auto_priority_uses_lowest_for_ttk() {
         },
     ];
 
-    let mut config = Config::default();
-    config.top_n = 1;
+    let config = Config {
+        top_n: 1,
+        ..Config::default()
+    };
 
     let (results, _) = Engine::new(&data).calculate_top(&config);
 
@@ -194,8 +200,10 @@ fn parallel_core_search_preserves_source_order_for_ties() {
         },
     ];
 
-    let mut config = Config::default();
-    config.top_n = 1;
+    let config = Config {
+        top_n: 1,
+        ..Config::default()
+    };
 
     let (results, stats) = Engine::new(&data).calculate_top(&config);
 
@@ -207,8 +215,10 @@ fn parallel_core_search_preserves_source_order_for_ties() {
 #[test]
 fn category_filter_is_case_insensitive() {
     let data = fixture_data();
-    let mut config = Config::default();
-    config.include_categories = vec!["ar".into()];
+    let config = Config {
+        include_categories: vec!["ar".into()],
+        ..Config::default()
+    };
 
     let (results, stats) = Engine::new(&data).calculate_top(&config);
 
@@ -219,8 +229,10 @@ fn category_filter_is_case_insensitive() {
 #[test]
 fn zero_part_pool_evaluates_no_combinations() {
     let data = fixture_data();
-    let mut config = Config::default();
-    config.part_pool_per_type = 0;
+    let config = Config {
+        part_pool_per_type: 0,
+        ..Config::default()
+    };
 
     let (results, stats) = Engine::new(&data).calculate_top(&config);
 
