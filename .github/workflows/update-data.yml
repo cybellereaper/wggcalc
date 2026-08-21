@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/bin/export_web_data.rs'
+      - '.github/workflows/update-data.yml'
 
 permissions:
   contents: write
@@ -14,18 +20,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Refresh FullData.sqlite3 from sheet
+        if: github.event_name != 'push'
         run: cargo run --release --bin parse_sheet
+
+      - name: Export browser dataset
+        run: cargo run --release --bin export_web_data
 
       - name: Commit and push updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Data/FullData.sqlite3
-          git commit -m "chore: update parsed sheet data" || echo "Nothing to commit"
+          git add Data/FullData.sqlite3 docs/data.json
+          git commit -m "chore: update calculator data" || echo "Nothing to commit"
           git push
