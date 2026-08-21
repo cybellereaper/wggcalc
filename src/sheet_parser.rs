@@ -3,6 +3,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process,
+    time::Duration,
 };
 
 use anyhow::{Context, Result};
@@ -135,6 +136,7 @@ impl SheetDownloader {
     pub fn new(sheet_id: impl Into<String>, sheet_folder: impl Into<PathBuf>) -> Result<Self> {
         let client = Client::builder()
             .redirect(reqwest::redirect::Policy::limited(5))
+            .timeout(Duration::from_secs(30))
             .build()?;
 
         Ok(Self {
@@ -145,22 +147,24 @@ impl SheetDownloader {
     }
 
     pub fn download(&self, exports: &[SheetExport]) -> Result<()> {
-        // Fetch everything before mutating SheetData. A transient network
-        // failure therefore cannot destroy the last successfully downloaded set.
-        let mut downloads = Vec::with_capacity(exports.len());
-        for export in exports {
-            let response = self
-                .client
-                .get(export.export_url(&self.sheet_id))
-                .send()
-                .with_context(|| format!("downloading {}", export.output_path.display()))?
-                .error_for_status()
-                .with_context(|| format!("downloading {}", export.output_path.display()))?;
-            downloads.push((export.output_path.clone(), response.bytes()?.to_vec()));
-        }
+        // Download first, mutate the existing sheet cache only after every
+        // request succeeds. A transient network failure keeps the last good set.
+        let downloads = exports
+            .iter()
+            .map(|export| {
+                let bytes = self
+                    .client
+                    .get(export.export_url(&self.sheet_id))
+                    .send()
+                    .with_context(|| format!("downloading {}", export.output_path.display()))?
+                    .error_for_status()
+                    .with_context(|| format!("downloading {}", export.output_path.display()))?
+                    .bytes()?;
+                Ok((export.output_path.clone(), bytes.to_vec()))
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         clear_folder(&self.sheet_folder)?;
-
         for (output_path, contents) in downloads {
             create_parent_dir(&output_path)?;
             fs::write(&output_path, contents)
@@ -180,7 +184,6 @@ fn create_parent_dir(path: &Path) -> Result<()> {
 
 fn clear_folder(path: &Path) -> Result<()> {
     fs::create_dir_all(path)?;
-
     for entry in fs::read_dir(path)? {
         let path = entry?.path();
         if path.is_dir() {
@@ -189,7 +192,6 @@ fn clear_folder(path: &Path) -> Result<()> {
             fs::remove_file(path)?;
         }
     }
-
     Ok(())
 }
 
@@ -203,11 +205,9 @@ pub fn normalize_numeric_value(
     }
 
     let cleaned = value
-        .replace('°', "")
-        .replace('s', "")
+        .replace(['°', 's'], "")
         .replace("rpm", "")
-        .replace('%', "")
-        .replace(',', "");
+        .replace(['%', ','], "");
     let cleaned = cleaned.trim();
 
     if expect_range {
@@ -296,12 +296,14 @@ pub struct PartsParser {
 
 impl PartsParser {
     pub fn new() -> Self {
-        let mut seen = HashMap::new();
-        for category in VALID_PART_CATEGORIES {
-            for part_type in VALID_PART_TYPES {
-                seen.insert((category.into(), part_type.into()), HashSet::new());
-            }
-        }
+        let seen = VALID_PART_CATEGORIES
+            .into_iter()
+            .flat_map(|category| {
+                VALID_PART_TYPES
+                    .into_iter()
+                    .map(move |part_type| ((category.into(), part_type.into()), HashSet::new()))
+            })
+            .collect();
         Self { seen }
     }
 
@@ -349,7 +351,7 @@ impl PartsParser {
             let seen = self
                 .seen
                 .get_mut(&(current_category.clone(), current_type.clone()))
-                .expect("known category/type");
+                .expect("validated category and part type");
             if !seen.insert(name.to_string()) {
                 return Err(ParseError(format!("Duplicate part name {name}")));
             }
@@ -361,18 +363,17 @@ impl PartsParser {
 
             for index in 2..=15 {
                 let cell = row[index].trim();
-                if cell.is_empty() {
-                    continue;
+                if !cell.is_empty() {
+                    part.insert(
+                        PART_PROPERTY_NAMES[index - 2].into(),
+                        normalize_numeric_value(&extract_leading_token(cell)?, false)?,
+                    );
                 }
-                part.insert(
-                    PART_PROPERTY_NAMES[index - 2].into(),
-                    normalize_numeric_value(&extract_leading_token(cell)?, false)?,
-                );
             }
 
             output
                 .get_mut(&current_type)
-                .expect("known part type")
+                .expect("validated part type")
                 .push(part);
         }
 
@@ -387,11 +388,11 @@ impl Default for PartsParser {
 }
 
 fn parse_divider(name: &str) -> Option<(String, String)> {
-    let mut parts = name.split_whitespace();
-    let category = parts.next()?;
-    let part_type = parts.next()?;
+    let mut pieces = name.split_whitespace();
+    let category = pieces.next()?;
+    let part_type = pieces.next()?;
 
-    if parts.next().is_some()
+    if pieces.next().is_some()
         || !VALID_PART_CATEGORIES.contains(&category)
         || !VALID_PART_TYPES.contains(&part_type)
     {
@@ -414,7 +415,6 @@ impl CoresParser {
         rows: &[Vec<String>],
     ) -> std::result::Result<ItemRows, ParseError> {
         const WIDTH: usize = 18;
-
         let mut output = Vec::new();
         let mut current_category = "AR".to_string();
 
@@ -431,7 +431,6 @@ impl CoresParser {
 
             let row = &row[..WIDTH];
             let name = row[1].trim();
-
             if let Some(category) = name
                 .strip_suffix(" Cores")
                 .filter(|category| VALID_PART_CATEGORIES.contains(category))
@@ -447,7 +446,6 @@ impl CoresParser {
 
             for index in 2..=17 {
                 let cell = &row[index];
-
                 if index == 2 {
                     if let Some(pellets) = extract_pellets(cell) {
                         core.insert("Pellets".into(), pellets.into());
@@ -469,8 +467,8 @@ impl CoresParser {
 
 fn extract_pellets(cell: &str) -> Option<i64> {
     let first = cell.split(" > ").next()?;
-    let (_, right) = first.split_once('x')?;
-    right.trim().parse().ok()
+    let (_, pellets) = first.split_once('x')?;
+    pellets.trim().parse().ok()
 }
 
 pub fn read_csv_rows(
@@ -490,11 +488,9 @@ pub fn read_csv_rows(
             .iter()
             .map(str::to_string)
             .collect::<Vec<String>>();
-
         if trim_first_column && !row.is_empty() {
             row.remove(0);
         }
-
         rows.push(row);
     }
 
@@ -502,17 +498,14 @@ pub fn read_csv_rows(
 }
 
 pub fn extract_leading_token(cell: &str) -> std::result::Result<String, ParseError> {
-    let (first, _) = cell
-        .split_once(' ')
-        .ok_or_else(|| ParseError(format!("Invalid property cell format: {cell:?}")))?;
-    Ok(first.into())
+    cell.split_once(' ')
+        .map(|(token, _)| token.to_string())
+        .ok_or_else(|| ParseError(format!("Invalid property cell format: {cell:?}")))
 }
 
 pub fn build_full_data(parts_file: &Path, cores_file: &Path) -> Result<ExportData> {
-    let parts = PartsParser::new().parse_file(parts_file)?;
-    let cores = CoresParser.parse_file(cores_file)?;
-    let mut data = parts;
-    data.insert("Cores".into(), cores);
+    let mut data = PartsParser::new().parse_file(parts_file)?;
+    data.insert("Cores".into(), CoresParser.parse_file(cores_file)?);
 
     let primary = [
         ("AR", 0),
@@ -551,14 +544,11 @@ pub fn save_sqlite(export: &ExportData, output_path: &Path) -> Result<()> {
         return Err(error);
     }
 
-    // The existing database is only removed after the replacement has been
-    // fully generated and committed, so parse/database failures do not destroy
-    // the last known-good output.
+    // Keep the previous DB intact until the replacement is fully generated.
     if output_path.exists() {
         fs::remove_file(output_path)
             .with_context(|| format!("removing old database {}", output_path.display()))?;
     }
-
     fs::rename(&temp_path, output_path).with_context(|| {
         format!(
             "replacing {} with generated database {}",
@@ -575,7 +565,6 @@ fn temporary_database_path(output_path: &Path) -> Result<PathBuf> {
         .file_name()
         .context("SQLite output path must include a file name")?
         .to_string_lossy();
-
     Ok(output_path.with_file_name(format!(
         ".{file_name}.{}.tmp",
         process::id()
@@ -615,7 +604,6 @@ fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
             "INSERT INTO cores (name, category, damage, damage_end, fire_rate) \
              VALUES (?1, ?2, ?3, ?4, ?5)",
         )?;
-
         for core in cores {
             let (damage, damage_end) = extract_damage_pair(core.get("Damage"));
             statement.execute(params![
@@ -638,7 +626,6 @@ fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
              (name, category, magazine_size, reload_time, damage_mod, fire_rate_mod) \
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         )?;
-
         for magazine in magazines {
             statement.execute(params![
                 string(magazine, "Name")?,
@@ -653,17 +640,14 @@ fn write_sqlite(export: &ExportData, path: &Path) -> Result<()> {
 
     {
         let mut statement = transaction.prepare(
-            "INSERT INTO parts \
-             (part_type, name, category, damage_mod, fire_rate_mod) \
+            "INSERT INTO parts (part_type, name, category, damage_mod, fire_rate_mod) \
              VALUES (?1, ?2, ?3, ?4, ?5)",
         )?;
-
         for part_type in ["Barrels", "Grips", "Stocks"] {
             let parts = export
                 .data
                 .get(part_type)
                 .with_context(|| format!("missing {part_type} part section"))?;
-
             for part in parts {
                 statement.execute(params![
                     part_type,
@@ -720,7 +704,6 @@ CREATE TABLE parts (
 );
 "#,
     )?;
-
     Ok(())
 }
 
