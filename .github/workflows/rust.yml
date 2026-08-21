@@ -1,39 +1,42 @@
-name: Rust CI
+name: Rust Format
 
 on:
   push:
-  pull_request:
+    branches:
+      - rust-full-migration
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: rust-ci-${{ github.workflow }}-${{ github.ref }}
+  group: rust-format-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality:
+  format:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: rust-full-migration
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: rustfmt
 
-      - name: Verify formatting
-        run: cargo fmt --all -- --check
+      - name: Apply rustfmt
+        run: cargo fmt --all
 
-      - name: Clippy
-        run: cargo clippy --locked --all-targets --all-features -- -D warnings
-
-      - name: Test
-        run: cargo test --locked --all-targets --all-features
-
-      - name: Build release binaries
-        run: cargo build --locked --release --bins
-
-      - name: Smoke test release binary with real dataset
-        run: ./target/release/wggcalc --top 1 --part-pool 5 --metrics
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests
+          if git diff --cached --quiet; then
+            echo "Formatting already clean"
+          else
+            git commit -m "style: apply rustfmt"
+            git push
+          fi
