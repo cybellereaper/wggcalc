@@ -1,0 +1,27 @@
+[package]
+name = "weirdgungamecalc"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Bruteforce calculator for the Roblox game Weird Gun Game"
+
+[[bin]]
+name = "wggcalc"
+path = "src/main.rs"
+
+[[bin]]
+name = "parse_sheet"
+path = "src/bin/parse_sheet.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+csv = "1"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"

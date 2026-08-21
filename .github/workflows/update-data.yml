@@ -16,14 +16,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Crystal
-        uses: crystal-lang/install-crystal@v1
-
-      - name: Install shard dependencies
-        run: shards install --production
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Refresh FullData.sqlite3 from sheet
-        run: crystal run ParseSheet.cr
+        run: cargo run --release --bin parse_sheet
 
       - name: Commit and push updates
         run: |

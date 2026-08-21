@@ -1,16 +1,16 @@
 .PHONY: build run test update-data clean
 
 build:
-	shards build --release
+	cargo build --release
 
 run:
-	crystal run src/main.cr --
+	cargo run --bin wggcalc --
 
 test:
-	crystal spec
+	cargo test
 
 update-data:
-	crystal run ParseSheet.cr
+	cargo run --release --bin parse_sheet
 
 clean:
-	rm -rf .shards shard.lock bin .crystal
+	cargo clean

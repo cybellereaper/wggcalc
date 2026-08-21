@@ -1,28 +1,30 @@
-# WeirdGunGameCalc
+# WeirdGunGameCalc (Rust)
+
+Rust rewrite of the Weird Gun Game bruteforce calculator.
 
 ## Build
 
 ```bash
-shards build --release
+cargo build --release
 ```
 
 Executable output:
 
 ```bash
-./bin/wggcalc --help
+./target/release/wggcalc --help
 ```
 
 ## Run examples
 
 ```bash
-./bin/wggcalc --top 10 --sort ttk --include AR,SMG
-./bin/wggcalc --sort dps --priority highest --dps-min 100
-./bin/wggcalc --ttk-max 0.25 --mh 100
+./target/release/wggcalc --top 10 --sort ttk --include AR,SMG
+./target/release/wggcalc --sort dps --priority highest --dps-min 100
+./target/release/wggcalc --ttk-max 0.25 --mh 100
 ```
 
 ## Supported flags
 
-- `--data <path>` path to `FullData.sqlite3` (JSON still supported for backward compatibility)
+- `--data <path>` path to `FullData.sqlite3` (legacy JSON is also supported)
 - `--top <n>` number of returned builds
 - `--mh <health>` max player health
 - `--sort <ttk|dps|damage|damageend|firerate|magazine>`
@@ -38,23 +40,17 @@ Executable output:
 ## Test
 
 ```bash
-crystal spec
+cargo test
 ```
 
 ## Regenerating sheet data
 
 ```bash
-crystal run ParseSheet.cr
+cargo run --release --bin parse_sheet
 ```
 
+The Rust data utility downloads the same Google Sheet CSV exports and recreates `Data/FullData.sqlite3` with the schema used by the calculator.
 
-## Web app (GitHub Pages)
+## Web app
 
-A browser-hosted version is available under `docs/`.
-
-- Entry point: `docs/index.html`
-- Engine: `docs/src/engine.js`
-- UI: `docs/src/app.js`
-- Tests: `docs/tests/engine.test.mjs`
-
-See `docs/README.md` for GitHub Pages deployment steps.
+The browser app under `docs/` is independent JavaScript and remains unchanged. The calculator, data parser/generator, tests, build commands, and scheduled data-refresh workflow no longer require Crystal or Shards.
